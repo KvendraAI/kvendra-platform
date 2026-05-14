@@ -62,3 +62,7 @@ coverage/
 # Misc
 tmp/
 .cache/
+
+# Kvendra Platform — local runtime artifacts
+/data/
+*.tsbuildinfo

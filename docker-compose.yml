@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# kvendra-platform — single-tenant local stack.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: kvendra-platform-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kvendra
+      POSTGRES_PASSWORD: kvendra
+      POSTGRES_DB: kvendra_platform
+    ports:
+      - '5432:5432'
+    volumes:
+      - kvendra_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kvendra -d kvendra_platform']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kvendra-platform
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://kvendra:kvendra@db:5432/kvendra_platform
+      EMBEDDINGS_PROVIDER: mock
+      AUTH_TOKEN_FILE: /data/auth.token
+      PORT: '7777'
+      HOST: '0.0.0.0'
+      LOG_LEVEL: info
+      STAGE: local
+    ports:
+      - '7777:7777'
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:7777/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kvendra_pgdata:
+    name: kvendra_platform_pgdata

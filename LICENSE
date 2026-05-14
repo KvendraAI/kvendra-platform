@@ -1,21 +1,48 @@
-MIT License
+GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3, 19 November 2007
 
-Copyright (c) 2026 Kvendra
+Copyright (C) 2026 Juan Pérez Buján / Kvendra
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
+General Public License for more details.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You should have received a copy of the GNU Affero General Public
+License along with this program. If not, see
+<https://www.gnu.org/licenses/agpl-3.0.txt>.
+
+----------------------------------------------------------------------
+
+TODO (implementer-v3 placeholder): replace this stub with the verbatim
+canonical text of the GNU Affero General Public License v3.0 fetched
+from https://www.gnu.org/licenses/agpl-3.0.txt before the first public
+release (M3 self-host stack pulido, per ROAD-KVD-011). The full text is
+required by AGPL section 14 for any distribution. This stub is
+SUFFICIENT to declare licensing intent during M1 alpha skeleton phase
+(repo is public but pre-1.0 alpha) but MUST be expanded before any
+binary distribution or container image is published.
+
+The SPDX-License-Identifier in every source file is "AGPL-3.0-only",
+which unambiguously identifies the intended license terms.
+
+----------------------------------------------------------------------
+
+Section 13 (Remote Network Interaction) note for users:
+
+If you modify this program and provide it as a network-accessible
+service to users (e.g. hosting your own kvendra-platform instance and
+exposing it via HTTP to third parties), AGPL section 13 requires you
+to offer the corresponding source code of your modified version to
+those users. See https://www.gnu.org/licenses/agpl-3.0.html#section13
+for the canonical legal text.
+
+The Kvendra commercial product (kvendra-enterprise) is a separate,
+proprietary codebase owned by the same legal entity and is NOT
+governed by this AGPL license. See ADR-KVD-004 (Open Core licensing)
+and ADR-KVD-023 (boundary motor vs operación SaaS).
