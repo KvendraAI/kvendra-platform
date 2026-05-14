@@ -6,6 +6,7 @@ import { EntityRepo } from './storage/entity-repo.js';
 import { HistoryRepo } from './storage/history-repo.js';
 import { TxnRepo } from './storage/txn-repo.js';
 import { buildHttpServer } from './server/http.js';
+import { txnInProgress } from './metrics/prom.js';
 import { logger } from './utils/logger.js';
 
 async function main(): Promise<void> {
@@ -22,6 +23,15 @@ async function main(): Promise<void> {
   const historyRepo = new HistoryRepo(pool);
   const txnRepo = new TxnRepo(pool);
   const embeddings = resolveEmbeddingsProvider(cfg.embeddingsProvider);
+
+  // Sync kvendra_txn_in_progress gauge on startup so it survives restarts.
+  try {
+    const inProgress = await txnRepo.countInProgress();
+    txnInProgress.set(inProgress);
+    logger.info({ inProgress }, 'kvendra_txn_in_progress gauge synced');
+  } catch (err) {
+    logger.warn({ err }, 'failed to sync kvendra_txn_in_progress gauge');
+  }
 
   const app = await buildHttpServer({
     port: cfg.port,

@@ -2,7 +2,7 @@
 import type { ToolDeps, ToolDescriptor } from '../tools/index.js';
 import { buildToolRegistry, TOOL_NAMES } from '../tools/index.js';
 import { zodToJsonSchema } from '../utils/zod-to-mcp.js';
-import { toolCallCounter, toolLatency } from '../metrics/prom.js';
+import { toolCallCounter, toolLatency, toolCallsTotal, toolDurationMs } from '../metrics/prom.js';
 import { asErrorPayload, PlatformError } from './errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -120,11 +120,14 @@ export class McpServer {
       throw new PlatformError('TOOL_NOT_FOUND', `Tool "${toolName}" is not registered.`, 'tools');
     }
     const end = toolLatency.startTimer({ tool: toolName });
+    const startMs = Date.now();
+    let status: 'ok' | 'error' = 'ok';
     try {
       const result = await tool.handler(this.deps, p?.arguments ?? {});
       toolCallCounter.inc({ tool: toolName, outcome: 'ok' });
       return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     } catch (err) {
+      status = 'error';
       toolCallCounter.inc({ tool: toolName, outcome: 'error' });
       if (err instanceof PlatformError) {
         return {
@@ -139,6 +142,8 @@ export class McpServer {
       };
     } finally {
       end();
+      toolDurationMs.labels(toolName).observe(Date.now() - startMs);
+      toolCallsTotal.labels(toolName, status).inc();
     }
   }
 }

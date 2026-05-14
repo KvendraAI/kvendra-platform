@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 import { txnCancelInput } from '../domain/validation.js';
+import { txnInProgress } from '../metrics/prom.js';
 import { PlatformError } from '../server/errors.js';
 import type { ToolDescriptor, ToolDeps } from './index.js';
 
@@ -11,6 +12,7 @@ export const txnCancelTool: ToolDescriptor = {
     const input = txnCancelInput.parse(raw);
     try {
       const txn = await deps.txnRepo.cancel(input.txn_id, input.reason, input.cancelled_by);
+      txnInProgress.dec();
       return { txn_id: txn.txn_id, cancelled_at: txn.cancelled_at };
     } catch (err) {
       throw new PlatformError('TXN_CANCEL_FAILED', (err as Error).message, 'txn');

@@ -42,11 +42,11 @@ describeIfDb('MCP tools — integration (Postgres+pgvector required)', () => {
     await closePool();
   });
 
-  it('entity_create — PRJ with force_id', async () => {
+  it('entity_create — PRJ with entity_id (literal)', async () => {
     const tool = registry.entity_create!;
     const out = (await tool.handler(deps, {
       entity_type: 'PRJ',
-      force_id: 'PRJ-TEST',
+      entity_id: 'PRJ-TEST',
       project_id: 'TEST',
       title: 'Test project',
       content: 'Test content',
@@ -55,7 +55,7 @@ describeIfDb('MCP tools — integration (Postgres+pgvector required)', () => {
     expect(out.status).toBe('active');
   });
 
-  it('entity_create — PRJ without force_id fails', async () => {
+  it('entity_create — PRJ without entity_id fails', async () => {
     const tool = registry.entity_create!;
     await expect(
       tool.handler(deps, { entity_type: 'PRJ', title: 't', content: 'c' }),
@@ -75,7 +75,7 @@ describeIfDb('MCP tools — integration (Postgres+pgvector required)', () => {
 
     const cmp = (await entityCreate.handler(deps, {
       entity_type: 'CMP',
-      force_id: 'CMP-TEST-ALPHA',
+      entity_id: 'CMP-TEST-ALPHA',
       project_id: 'TEST',
       title: 'Alpha cmp',
       content: 'desc',

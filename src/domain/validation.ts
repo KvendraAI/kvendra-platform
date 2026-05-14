@@ -13,7 +13,6 @@ export const relationSchema = z.object({
 export const createEntityInput = z.object({
   entity_type: entityTypeSchema,
   entity_id: z.string().optional(),
-  force_id: z.string().optional(),
   project_id: z.string().optional(),
   component_id: z.string().optional(),
   title: z.string().min(1),
@@ -58,6 +57,7 @@ export const relatedInput = z.object({
   limit: z.number().int().min(1).max(20).optional(),
   min_score: z.number().min(0).max(1).optional(),
   entity_type: entityTypeSchema.optional(),
+  cross_projects: z.boolean().optional(),
 });
 
 export const queryInput = z.object({
@@ -89,7 +89,7 @@ export const txnCreateInput = z.object({
   component_id: z.string().optional(),
   type: z.string().min(1),
   trigger: z.string().optional(),
-  pipeline: z.record(z.unknown()).optional(),
+  pipeline: z.array(z.object({ step: z.number(), name: z.string() })).optional(),
   started_by: z.string().min(1),
   force_id: z.string().optional(),
 });

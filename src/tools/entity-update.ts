@@ -53,10 +53,11 @@ export const entityUpdateTool: ToolDescriptor = {
         input.txn_id ?? null,
       );
 
+      const historyId = await deps.historyRepo.latestForEntity(updated.entity_id);
       return {
         entity_id: updated.entity_id,
         version: updated.version,
-        history_id: null,
+        history_id: historyId,
       };
     } catch (err) {
       if (err instanceof RepoError) {

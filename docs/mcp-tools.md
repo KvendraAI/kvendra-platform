@@ -82,6 +82,12 @@ or `entity_id_asc`).
 `{ query (≥3 chars), entity_type?, project_id?, tags_all?, limit≤20=10, min_score=0.4, include_archived=false }`
 → `{ results: [{ entity_id, score, title, snippet }] }`. Cosine similarity.
 
+> **Note (mock embeddings provider)**: the M1 default embeddings provider
+> generates uniform random vectors with no semantic correlation, so search
+> scores are noise. Pass `min_score: 0` to see results during local smoke
+> tests. The Bedrock provider scheduled for M2 will deliver true semantic
+> correlation.
+
 ## Transactions
 
 ### `txn_create`

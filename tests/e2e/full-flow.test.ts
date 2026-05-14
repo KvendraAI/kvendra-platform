@@ -67,7 +67,7 @@ describeIfPlatform('AC-PLAT-11 end-to-end full flow', () => {
     // 1) PRJ
     await callTool('entity_create', {
       entity_type: 'PRJ',
-      force_id: 'PRJ-DEMO',
+      entity_id: 'PRJ-DEMO',
       project_id: 'DEMO',
       title: 'Demo project',
       content: 'kvendra platform smoke test',
@@ -84,7 +84,7 @@ describeIfPlatform('AC-PLAT-11 end-to-end full flow', () => {
     // 3) Drafts (CMP, ISSUE, ADR, ROAD)
     await callTool('entity_create', {
       entity_type: 'CMP',
-      force_id: 'CMP-DEMO-CORE',
+      entity_id: 'CMP-DEMO-CORE',
       project_id: 'DEMO',
       title: 'Core component',
       content: 'demo core',

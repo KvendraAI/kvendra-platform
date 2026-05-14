@@ -12,7 +12,7 @@ function rowToTxn(row: Record<string, unknown>): Transaction {
     trigger: (row.trigger as string | null) ?? null,
     project_id: row.project_id as string,
     component_id: (row.component_id as string | null) ?? null,
-    pipeline: (row.pipeline as Record<string, unknown>) ?? {},
+    pipeline: (row.pipeline as Transaction['pipeline']) ?? [],
     started_by: row.started_by as string,
     started_at: new Date(row.started_at as string).toISOString(),
     completed_at: row.completed_at ? new Date(row.completed_at as string).toISOString() : null,
@@ -30,7 +30,7 @@ export class TxnRepo {
     component_id?: string | null;
     type: string;
     trigger?: string | null;
-    pipeline?: Record<string, unknown>;
+    pipeline?: Array<{ step: number; name: string }>;
     started_by: string;
     force_id?: string | null;
   }): Promise<Transaction> {
@@ -46,7 +46,7 @@ export class TxnRepo {
         input.trigger ?? null,
         input.project_id,
         input.component_id ?? null,
-        JSON.stringify(input.pipeline ?? {}),
+        JSON.stringify(input.pipeline ?? []),
         input.started_by,
       ],
     );
@@ -151,6 +151,13 @@ export class TxnRepo {
     } finally {
       client.release();
     }
+  }
+
+  async countInProgress(): Promise<number> {
+    const { rows } = await this.pool.query<{ c: string }>(
+      `SELECT count(*)::TEXT AS c FROM transactions WHERE status = 'in-progress'`,
+    );
+    return Number(rows[0]?.c ?? '0');
   }
 
   async checkInterrupted(

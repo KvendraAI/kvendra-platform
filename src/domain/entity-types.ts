@@ -47,7 +47,7 @@ export interface Transaction {
   trigger: string | null;
   project_id: string;
   component_id: string | null;
-  pipeline: Record<string, unknown>;
+  pipeline: Array<{ step: number; name: string }>;
   started_by: string;
   started_at: string;
   completed_at: string | null;

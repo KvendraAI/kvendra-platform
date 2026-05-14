@@ -22,9 +22,13 @@ export const entityRelatedTool: ToolDescriptor = {
       input: [entity.title, entity.content].filter(Boolean).join('\n'),
     });
     const queryVec = data[0]?.embedding ?? [];
+    // Scope to the same project unless caller explicitly opts in via
+     // cross_projects:true (ISSUE-KVD-PLATFORM-008 #3).
+    const sameProject = !input.cross_projects && entity.project_id ? entity.project_id : undefined;
     const hits = await deps.entityRepo.search({
       query_embedding: queryVec,
       ...(input.entity_type ? { entity_type: input.entity_type } : {}),
+      ...(sameProject ? { project_id: sameProject } : {}),
       limit: limit + 1,
       min_score,
       include_archived: false,

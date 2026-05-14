@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 import { txnCreateInput } from '../domain/validation.js';
+import { txnInProgress } from '../metrics/prom.js';
 import type { ToolDescriptor, ToolDeps } from './index.js';
 
 export const txnCreateTool: ToolDescriptor = {
@@ -17,6 +18,7 @@ export const txnCreateTool: ToolDescriptor = {
       started_by: input.started_by,
       ...(input.force_id ? { force_id: input.force_id } : {}),
     });
+    txnInProgress.inc();
     return { txn_id: txn.txn_id, started_at: txn.started_at };
   },
 };

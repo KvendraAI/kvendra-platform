@@ -133,6 +133,43 @@ export class EntityRepo {
     return entity;
   }
 
+  /**
+   * Find a CFG entity by metadata.scope + identifiers. Returns the most
+   * recently updated active (non-archived, non-draft) match, or null.
+   * scope:
+   *   - 'user'         → metadata.user_id = userId
+   *   - 'project'      → metadata.project_id = projectId
+   *   - 'project_user' → both metadata.user_id and metadata.project_id match
+   */
+  async findCfgByScope(
+    scope: 'user' | 'project' | 'project_user',
+    userId: string | null,
+    projectId: string | null,
+  ): Promise<Entity | null> {
+    const where: string[] = [
+      `entity_type = 'CFG'`,
+      `archived = false`,
+      `status <> 'draft'`,
+      `metadata->>'scope' = $1`,
+    ];
+    const params: unknown[] = [scope];
+    let idx = 2;
+    if (scope === 'user' || scope === 'project_user') {
+      if (!userId) return null;
+      where.push(`metadata->>'user_id' = $${idx++}`);
+      params.push(userId);
+    }
+    if (scope === 'project' || scope === 'project_user') {
+      if (!projectId) return null;
+      where.push(`metadata->>'project_id' = $${idx++}`);
+      params.push(projectId);
+    }
+    const sql = `SELECT * FROM entities WHERE ${where.join(' AND ')} ORDER BY updated_at DESC LIMIT 1`;
+    const { rows } = await this.pool.query(sql, params);
+    if (rows.length === 0) return null;
+    return rowToEntity(rows[0] as Record<string, unknown>);
+  }
+
   async getRelations(entityId: string): Promise<{
     outbound: Array<{ type: string; target: string }>;
     inbound: Array<{ type: string; source: string }>;

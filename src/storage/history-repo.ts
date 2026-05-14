@@ -5,6 +5,14 @@ import type { HistoryEntry } from '../domain/entity-types.js';
 export class HistoryRepo {
   constructor(private readonly pool: Pool) {}
 
+  async latestForEntity(entityId: string): Promise<string | null> {
+    const { rows } = await this.pool.query<{ id: string }>(
+      `SELECT id::TEXT AS id FROM entity_history WHERE entity_id = $1 ORDER BY id DESC LIMIT 1`,
+      [entityId],
+    );
+    return rows[0]?.id ?? null;
+  }
+
   async getHistory(entityId: string, limit = 20): Promise<HistoryEntry[]> {
     const { rows } = await this.pool.query(
       `SELECT id, entity_id, fecha, autor, trigger, change_summary,

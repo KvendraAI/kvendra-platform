@@ -12,6 +12,18 @@ export const txnCheckInterruptedTool: ToolDescriptor = {
       input.project_id,
       input.component_id ?? null,
     );
-    return { interrupted: txns };
+    // ISSUE-KVD-PLATFORM-008 #7: always return { interrupted: TxnSummary[] },
+    // even when the result set is empty.
+    const interrupted = (txns ?? []).map((t) => ({
+      txn_id: t.txn_id,
+      status: t.status,
+      type: t.type,
+      project_id: t.project_id,
+      component_id: t.component_id,
+      started_by: t.started_by,
+      started_at: t.started_at,
+      pipeline: t.pipeline,
+    }));
+    return { interrupted };
   },
 };

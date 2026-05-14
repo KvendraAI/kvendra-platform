@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 import { txnActivateInput } from '../domain/validation.js';
+import { txnInProgress } from '../metrics/prom.js';
 import { PlatformError } from '../server/errors.js';
 import type { ToolDescriptor, ToolDeps } from './index.js';
 
@@ -15,6 +16,7 @@ export const txnActivateTool: ToolDescriptor = {
         input.txn_id,
         input.activated_by,
       );
+      txnInProgress.dec();
       return {
         txn_id: txn.txn_id,
         completed_at: txn.completed_at,

@@ -8,11 +8,16 @@ export interface CascadeResult {
 }
 
 /**
- * Merge `CFG-<USER>` → `CFG-<PROY>` → optional `CFG-<PROY>-<USER>` cascade.
+ * Merge `CFG user` → `CFG project` → optional `CFG project-user` cascade.
  *
  * Each level overrides the same JSON keys of the previous. The CFG entity
  * stores its config payload in `metadata.config` (JSON). Missing levels are
  * skipped silently.
+ *
+ * Lookup strategy (ISSUE-KVD-PLATFORM-006): match CFG entities by
+ * `metadata.scope` + `metadata.user_id` / `metadata.project_id`. A legacy
+ * fallback to id-pattern (`CFG-<USER>` / `CFG-<PROJECT>` /
+ * `CFG-<PROJECT>-<USER>`) is kept for compat with pre-fix CFG rows.
  */
 export async function buildCfgCascade(
   repo: EntityRepo,
@@ -23,24 +28,30 @@ export async function buildCfgCascade(
   const sources: CascadeResult['sources'] = [];
   let merged: Record<string, unknown> = {};
 
-  const cfgUserId = `CFG-${userId.toUpperCase()}`;
-  const userEntity = await repo.getById(cfgUserId, true, true);
+  const userEntity =
+    (await repo.findCfgByScope('user', userId, null)) ??
+    (await legacyGet(repo, `CFG-${userId.toUpperCase()}`));
   if (userEntity) {
     merged = deepMerge(merged, extractConfig(userEntity));
     sources.push({ scope: 'user', entity_id: userEntity.entity_id });
   }
 
   if (projectId) {
-    const cfgProyId = `CFG-${projectId.toUpperCase()}`;
-    const proyEntity = await repo.getById(cfgProyId, true, true);
+    const proyEntity =
+      (await repo.findCfgByScope('project', null, projectId)) ??
+      (await legacyGet(repo, `CFG-${projectId.toUpperCase()}`));
     if (proyEntity) {
       merged = deepMerge(merged, extractConfig(proyEntity));
       sources.push({ scope: 'project', entity_id: proyEntity.entity_id });
     }
 
     if (includeProjectUser) {
-      const cfgProyUserId = `CFG-${projectId.toUpperCase()}-${userId.toUpperCase()}`;
-      const proyUserEntity = await repo.getById(cfgProyUserId, true, true);
+      const proyUserEntity =
+        (await repo.findCfgByScope('project_user', userId, projectId)) ??
+        (await legacyGet(
+          repo,
+          `CFG-${projectId.toUpperCase()}-${userId.toUpperCase()}`,
+        ));
       if (proyUserEntity) {
         merged = deepMerge(merged, extractConfig(proyUserEntity));
         sources.push({ scope: 'project-user', entity_id: proyUserEntity.entity_id });
@@ -49,6 +60,10 @@ export async function buildCfgCascade(
   }
 
   return { merged, sources };
+}
+
+async function legacyGet(repo: EntityRepo, id: string): Promise<Entity | null> {
+  return repo.getById(id, true, true);
 }
 
 function extractConfig(entity: Entity): Record<string, unknown> {

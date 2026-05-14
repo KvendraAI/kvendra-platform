@@ -29,7 +29,7 @@ const DEFAULT_GENERATE_EMBEDDING_TYPES = new Set([
 export const entityCreateTool: ToolDescriptor = {
   name: 'entity_create',
   description:
-    'Create a new typed Kvendra entity. Server validates schema, format, relations, and computes embeddings unless generate_embedding=false. PRJ/CMP/REL require force_id.',
+    'Create a new typed Kvendra entity. Server validates schema, format, relations, and computes embeddings unless generate_embedding=false. PRJ/CMP/REL require entity_id (literal id supplied by caller).',
   inputSchema: createEntityInput,
   async handler(deps: ToolDeps, raw: unknown) {
     const input = createEntityInput.parse(raw);
@@ -41,10 +41,21 @@ export const entityCreateTool: ToolDescriptor = {
         'entity_types',
       );
     }
-    const forceId = input.force_id ?? input.entity_id;
+    // App-side FK validation for txn_id (defense-in-depth alongside DB FK 0008).
+    if (input.txn_id) {
+      const txn = await deps.txnRepo.get(input.txn_id);
+      if (!txn) {
+        throw new PlatformError(
+          'INVALID_INPUT',
+          `TXN "${input.txn_id}" not found.`,
+          'txn',
+        );
+      }
+    }
+
     const resolved = resolveEntityId(
       input.entity_type,
-      forceId,
+      input.entity_id,
       input.project_id ?? null,
       input.component_id ?? null,
     );
