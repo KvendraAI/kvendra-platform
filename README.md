@@ -66,6 +66,31 @@ Restart Claude Code. The 14 `kvendra-platform__*` tools become available.
 
 Tool input/output schemas live in [`docs/mcp-tools.md`](./docs/mcp-tools.md).
 
+## Configure embeddings provider
+
+`kvendra-platform` resolves the embeddings provider at startup from the
+`EMBEDDINGS_PROVIDER` env var.
+
+```bash
+# Default (docker-compose): mock provider — deterministic, wire-stable, CI/demo only.
+EMBEDDINGS_PROVIDER=mock
+
+# Self-host with local Ollama (Tier B — 100% offline, BYO model quality):
+EMBEDDINGS_PROVIDER=openai-compatible
+EMBEDDINGS_BASE_URL=http://localhost:11434/v1
+EMBEDDINGS_MODEL=mxbai-embed-large
+
+# Self-host aligned with Kvendra Cloud SaaS (Tier A — no quality drift):
+EMBEDDINGS_PROVIDER=openai-compatible
+EMBEDDINGS_BASE_URL=https://api.kvendra.com/v1
+EMBEDDINGS_MODEL=kvendra-embedding-v1
+EMBEDDINGS_API_KEY=<your-key-from-app.kvendra.cloud>
+```
+
+Vectors are validated as 1024-dim and L2-normalized. Models with other dims
+(e.g. `nomic-embed-text` → 768) fail at request time. See [`docs/embeddings.md`](./docs/embeddings.md)
+for the full configuration matrix, supported providers, and the Tier A/B/C model.
+
 ## License (AGPL-3.0 — §13 implications)
 
 Source code in this repository is licensed under [GNU AGPL-3.0-only](./LICENSE).

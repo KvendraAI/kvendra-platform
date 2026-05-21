@@ -31,7 +31,26 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://kvendra:kvendra@db:5432/kvendra_platform
+
+      # === Embeddings provider ===
+      # Allowed: mock | openai-compatible | bedrock (bedrock NOT available in Platform AGPL).
+      # See ./docs/embeddings.md for full configuration matrix.
       EMBEDDINGS_PROVIDER: mock
+
+      # Uncomment for Tier B self-host with local Ollama:
+      # EMBEDDINGS_PROVIDER: openai-compatible
+      # EMBEDDINGS_BASE_URL: http://host.docker.internal:11434/v1
+      # EMBEDDINGS_MODEL: mxbai-embed-large
+
+      # Uncomment for Tier A with Kvendra Cloud (aligned with SaaS):
+      # EMBEDDINGS_PROVIDER: openai-compatible
+      # EMBEDDINGS_BASE_URL: https://api.kvendra.com/v1
+      # EMBEDDINGS_MODEL: kvendra-embedding-v1
+      # EMBEDDINGS_API_KEY: <your-key>
+
+      # Optional tuning:
+      # EMBEDDINGS_TIMEOUT_MS: '30000'
+
       AUTH_TOKEN_FILE: /data/auth.token
       PORT: '7777'
       HOST: '0.0.0.0'

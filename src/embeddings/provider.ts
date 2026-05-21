@@ -32,7 +32,7 @@ export const KVENDRA_EMBEDDING_MODEL = 'kvendra-embedding-v1' as const;
 export const EMBEDDING_DIM = 1024 as const;
 
 /** Internal provider id — never leaked on the wire. */
-export type EmbeddingsProviderId = 'mock' | 'bedrock';
+export type EmbeddingsProviderId = 'mock' | 'bedrock' | 'openai-compatible';
 
 export interface EmbeddingsRequest {
   /** Single string or list of strings to embed (max 32 items, 8192 chars each). */
