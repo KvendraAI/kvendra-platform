@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Release pipeline — build, push to ghcr.io, sign with Sigstore/cosign
+# keyless (GHA OIDC), generate SBOM SPDX, attach to GitHub Release.
+#
+# Triggered by pushing a tag matching v*.*.* (e.g. v0.2.0).
+#
+# Refs: REQ-KVD-PLATFORM-SIGNING (M5 of ROAD-KVD-716183).
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-*'         # allow pre-release tags (e.g. v0.2.0-alpha.1)
+
+permissions:
+  contents: write          # create GitHub Release + upload assets
+  packages: write          # push to ghcr.io
+  id-token: write          # Sigstore keyless OIDC (no key material to manage)
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/kvendra-platform
+  COSIGN_VERSION: 'v2.2.4'
+  SYFT_VERSION: 'v1.18.0'
+
+jobs:
+  build-sign-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive version tag
+        id: meta
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push (linux/amd64 + linux/arm64)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ env.IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.licenses=AGPL-3.0-only
+            org.kvendra.commit=${{ github.sha }}
+          provenance: true
+          sbom: true
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: ${{ env.COSIGN_VERSION }}
+
+      - name: Sign image (keyless OIDC)
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          cosign sign --yes \
+            "${IMAGE}@${{ steps.build.outputs.digest }}"
+
+      - name: Install Syft (SBOM generator)
+        uses: anchore/sbom-action/download-syft@v0
+        with:
+          syft-version: ${{ env.SYFT_VERSION }}
+
+      - name: Generate SBOM (SPDX JSON)
+        run: |
+          syft "${IMAGE}@${{ steps.build.outputs.digest }}" \
+            -o spdx-json="kvendra-platform-${{ steps.meta.outputs.version }}.spdx.json"
+
+      - name: Attest SBOM to image (cosign attest)
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          cosign attest --yes \
+            --predicate "kvendra-platform-${{ steps.meta.outputs.version }}.spdx.json" \
+            --type spdxjson \
+            "${IMAGE}@${{ steps.build.outputs.digest }}"
+
+      - name: Create GitHub Release with SBOM asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            kvendra-platform-${{ steps.meta.outputs.version }}.spdx.json
+          body: |
+            # kvendra-platform ${{ steps.meta.outputs.tag }}
+
+            Container image:
+            ```
+            ghcr.io/${{ github.repository_owner }}/kvendra-platform:${{ steps.meta.outputs.version }}
+            ```
+
+            Digest: `${{ steps.build.outputs.digest }}`
+
+            ## Verification
+
+            ```bash
+            cosign verify ghcr.io/${{ github.repository_owner }}/kvendra-platform:${{ steps.meta.outputs.version }} \
+              --certificate-identity-regexp '^https://github.com/${{ github.repository }}/' \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com
+            ```
+
+            ## SBOM (SPDX JSON)
+
+            Attached as a release asset and also attested to the image
+            digest via cosign. Verify the attached attestation:
+
+            ```bash
+            cosign verify-attestation ghcr.io/${{ github.repository_owner }}/kvendra-platform:${{ steps.meta.outputs.version }} \
+              --certificate-identity-regexp '^https://github.com/${{ github.repository }}/' \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+              --type spdxjson
+            ```
