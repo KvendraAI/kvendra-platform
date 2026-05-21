@@ -32,8 +32,21 @@ export function registerMcpRoute(app: FastifyInstance, server: McpServer): void 
     return reply.send(response);
   });
 
-  // GET /mcp returns the tool listing in JSON for human inspection.
-  app.get('/mcp', async () => {
+  // GET /mcp behavior:
+  //   - MCP Streamable HTTP clients open a server-initiated SSE channel via
+  //     GET with Accept: text/event-stream. We don't implement server-initiated
+  //     events — reply 405 so compliant clients fall back to POST-only mode
+  //     (per spec: "The server MAY return 405 to indicate it does not support
+  //     server-initiated messages over GET").
+  //   - Human inspection (curl with Accept: */* or application/json) keeps the
+  //     JSON tool listing.
+  app.get('/mcp', async (req, reply) => {
+    const accept = String(req.headers.accept ?? '').toLowerCase();
+    const wantsSse = accept.includes('text/event-stream');
+    const wantsJson = accept.includes('application/json') || accept.includes('*/*') || accept === '';
+    if (wantsSse && !wantsJson) {
+      return reply.code(405).header('Allow', 'POST').send();
+    }
     return { server: 'kvendra-platform', tools: server.listTools() };
   });
 }
