@@ -131,5 +131,8 @@ export const helpInput = z.object({
     'examples',
     'entity_types',
     'version',
+    'install',
+    'workspace-layout',
+    'skill-playbooks',
   ]),
 });
