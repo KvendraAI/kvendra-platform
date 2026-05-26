@@ -21,6 +21,7 @@ const ALL_TOPICS = [
   'install',
   'workspace-layout',
   'skill-playbooks',
+  'broker-policy',
 ] as const;
 
 interface HelpResponse {
@@ -103,6 +104,24 @@ describe('helpTool — new topics', () => {
     expect(out.content).toMatch(/STD-<PROJECT>-<COMPONENT\?>-<TOPIC>/);
     expect(out.content).toMatch(/DEPLOY-PROCESS/);
     expect(out.content).toMatch(/Fail-safe/);
+  });
+
+  it('topic broker-policy documents STD entity subclass + .kvendra-protected schema', async () => {
+    const out = (await helpTool.handler(stubDeps, { topic: 'broker-policy' })) as HelpResponse;
+    expect(out.content).toMatch(/broker-policy — STD entity subclass/);
+    expect(out.content).toMatch(/STD-<PROJECT>-BROKER-POLICY/);
+    expect(out.content).toMatch(/STD-<PROJECT>-<COMP>-BROKER-POLICY/);
+    expect(out.content).toMatch(/\.kvendra-protected/);
+    expect(out.content).toMatch(/schema_version: 1/);
+    expect(out.content).toMatch(/strict \| permissive \| hybrid/);
+    expect(out.content).toMatch(/Fail-safe/);
+    expect(out.see_also).toEqual(['bootstrap', 'skill-playbooks', 'entity_types']);
+    expect(out.queries).toBeUndefined();
+  });
+
+  it('bootstrap.see_also includes broker-policy', async () => {
+    const out = (await helpTool.handler(stubDeps, { topic: 'bootstrap' })) as HelpResponse;
+    expect(out.see_also).toContain('broker-policy');
   });
 });
 

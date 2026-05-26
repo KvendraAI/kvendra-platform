@@ -36,7 +36,7 @@ const HELP_CONTENT: Record<string, TopicEntry> = {
   bootstrap: {
     content:
       '# Project bootstrap protocol\n\nRun the queries below in order to load the project context for the current session. The protocol is invariant across Kvendra projects — CLAUDE.md only declares project_id + tier flag; everything else loads from the KB at session start.\n\nThis topic returns project-level bootstrap. For motor installation instructions see topic `install`.',
-    see_also: ['identity', 'workspace-layout', 'txn', 'install'],
+    see_also: ['identity', 'workspace-layout', 'txn', 'install', 'broker-policy'],
     queries: PROJECT_BOOTSTRAP_QUERIES,
   },
   install: {
@@ -97,6 +97,11 @@ const HELP_CONTENT: Record<string, TopicEntry> = {
     content:
       '# Skill playbooks — STD entity convention\n\nSkills v2 read tech-specific recipes from STD entities at runtime instead of hard-coding them in `SKILL.md`. This extends the indirection-to-help principle (see PAT-KVD-2CBB6D L4-extended) to project-specific procedures.\n\nNaming convention:\n- `STD-<PROJECT>-<COMPONENT?>-<TOPIC>`\n- `<COMPONENT?>` is optional — omit for cross-component procedures (e.g. `STD-<PROJECT>-DEPLOY-POLICY`).\n- `<TOPIC>` canonical values: `DEPLOY-PROCESS`, `RELEASE-PROCESS`, `TEST-PROCESS`, `REGRESSION-SUITE`, `DOC-PUBLISH`, `INCIDENT-RESPONSE`, `DEPLOY-POLICY`. Extensible.\n\nContent shape (markdown sections):\n- `Purpose`, `Pre-conditions`, `Steps` (numbered with command + expected output + failure mode), `Post-conditions`, `Variables` (name/value/notes table), `Validation`, `Rollback`.\n\nMetadata fields (recommended):\n- `playbook_type`: deploy|release|test|regression|doc-publish|incident-response\n- `autonomous`: boolean (whether the skill can run all steps without confirmation)\n- `requires_confirmation`: string[] (step ids that need explicit user confirmation)\n- `vault_profile_required`: string|null (broker profile_id needed, if any)\n- `estimated_duration_minutes`: integer\n\nFail-safe: if the skill needs an STD that does not exist, it STOPS and asks the user to define it (no improvisation). See ADR-KVD-SKILLS-BB0E8A for the full schema and rationale.',
     see_also: ['bootstrap', 'workspace-layout', 'naming'],
+  },
+  'broker-policy': {
+    content:
+      '# broker-policy — STD entity subclass\n\nKvendra projects can declare an external-execution policy as an STD entity\nof subclass `broker-policy`. The PreToolUse hook of the kvendra-skills\nplugin materialises this policy locally as `.kvendra-protected` (YAML) and\nenforces it on every Bash invocation inside the workspace.\n\n## Naming\n\n- PROJ-level default: `STD-<PROJECT>-BROKER-POLICY`\n- CMP-level override (additive only): `STD-<PROJECT>-<COMP>-BROKER-POLICY`\n\n## Resolution\n\n1. Read PROJ STD. Missing → permissive default (no enforcement); a clear\n   hint is logged to stderr.\n2. Optionally merge any CMP override declared via tags `scope:broker-policy`.\n3. CMP overrides may add to block_bash + require_broker; may NOT weaken\n   PROJ-level entries.\n\n## Schema (.kvendra-protected YAML — schema_version: 1)\n\n- mode: strict | permissive | hybrid\n- allow_bash: regex[]    (used in permissive + hybrid)\n- block_bash: regex[]    (used in strict + hybrid)\n- require_broker: op → primitive map\n- broker_install_hint: string\n- broker_min_version: semver | null\n- synced_from, synced_version, synced_at: provenance metadata\n\n## Modes\n\n- strict: block_bash matched → exit 2.\n- permissive: allow all Bash; no enforcement.\n- hybrid: block_bash first; allow_bash as exception list.\n\n## Drift semantics\n\nSkills compare local synced_version against current STD.version on\nbootstrap. Mismatch → structured warning; non-blocking; user runs\n/sync-claudemd to refresh.\n\n## Marker file\n\n- Canonical name: `.kvendra-protected`.\n- Legacy `.kvendra-workspace` (empty marker) supported for 1 release\n  with a deprecation warning, then removed.\n\n## Fail-safe\n\n- Hook fails CLOSED on malformed YAML.\n- Missing marker → no enforcement (workspace is not Kvendra-protected).',
+    see_also: ['bootstrap', 'skill-playbooks', 'entity_types'],
   },
 };
 

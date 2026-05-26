@@ -134,5 +134,6 @@ export const helpInput = z.object({
     'install',
     'workspace-layout',
     'skill-playbooks',
+    'broker-policy',
   ]),
 });
