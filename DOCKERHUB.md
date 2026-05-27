@@ -249,15 +249,38 @@ This path pulls **zero** Kvendra-built bits — only `node:20-alpine` from Docke
 
 ## Verify the image
 
-Pulls happen over TLS from Docker Hub. To verify the image digest matches what the project shipped:
+The project signs each released image with **cosign keyless-OIDC** via GitHub Actions (no key material to manage — the Fulcio cert proves the image was built by the `KvendraAI/kvendra-platform` GitHub Actions workflow). Releases also attach an SBOM (SPDX JSON) as a cosign attestation.
+
+### Quick check — digest only
 
 ```bash
 docker pull kvendra/kvendra-platform:0.1.0-alpha.0
 docker inspect --format='{{.Id}}' kvendra/kvendra-platform:0.1.0-alpha.0
-# Expected (alpha.0): sha256:517ae7255d1e5693735c84c5fb1c25bae9a0874d2c954cd090b8574e85936b40
+# alpha.0 (unsigned, pre-workflow): sha256:517ae7255d1e5693735c84c5fb1c25bae9a0874d2c954cd090b8574e85936b40
 ```
 
-**Signing**: the project ships cosign keyless-OIDC signatures via GitHub Actions. Until the signing flow finishes migrating from GHCR to Docker Hub (tracked in `ISSUE-KVD-REFERENCESTACK-E17E41`), the digest above is the canonical integrity reference. For audit-grade environments, see Path B (build-from-source) in the reference-stack repo.
+### Full check — cosign signature + SBOM attestation (recommended)
+
+Install [cosign](https://docs.sigstore.dev/system_config/installation/) (`brew install cosign` on macOS) and:
+
+```bash
+# Verify the image signature.
+cosign verify docker.io/kvendra/kvendra-platform:<version> \
+  --certificate-identity-regexp '^https://github.com/KvendraAI/kvendra-platform/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+# Verify the SBOM attestation.
+cosign verify-attestation docker.io/kvendra/kvendra-platform:<version> \
+  --certificate-identity-regexp '^https://github.com/KvendraAI/kvendra-platform/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --type spdxjson
+```
+
+Both commands exit 0 with a JSON payload if the signature is valid. The matching SBOM is also attached as a GitHub Release asset at https://github.com/KvendraAI/kvendra-platform/releases/.
+
+### Coverage caveat (current state, 2026-05-27)
+
+The cosign signing workflow targets Docker Hub from `v0.1.1+` onwards. The current `v0.1.0-alpha.0` tag was pushed manually before the workflow was wired and is **not signed** — for that version, fall back to the digest check above. The next release will be signed end-to-end.
 
 ---
 

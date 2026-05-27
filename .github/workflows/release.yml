@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
-# Release pipeline — build, push to ghcr.io, sign with Sigstore/cosign
+# Release pipeline — build, push to Docker Hub, sign with Sigstore/cosign
 # keyless (GHA OIDC), generate SBOM SPDX, attach to GitHub Release.
 #
 # Triggered by pushing a tag matching v*.*.* (e.g. v0.2.0).
 #
 # Refs: REQ-KVD-PLATFORM-SIGNING (M5 of ROAD-KVD-716183).
+# Migrated from GHCR to Docker Hub 2026-05-27 — closes ISSUE-KVD-REFERENCESTACK-E17E41
+# signing track. Requires repo secrets DOCKERHUB_USERNAME + DOCKERHUB_TOKEN.
 
 name: release
 
@@ -17,11 +19,10 @@ on:
 
 permissions:
   contents: write          # create GitHub Release + upload assets
-  packages: write          # push to ghcr.io
   id-token: write          # Sigstore keyless OIDC (no key material to manage)
 
 env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/kvendra-platform
+  IMAGE: docker.io/kvendra/kvendra-platform
   COSIGN_VERSION: 'v2.2.4'
   SYFT_VERSION: 'v1.18.0'
 
@@ -48,12 +49,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to ghcr.io
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & push (linux/amd64 + linux/arm64)
         id: build
@@ -117,7 +117,7 @@ jobs:
 
             Container image:
             ```
-            ghcr.io/${{ github.repository_owner }}/kvendra-platform:${{ steps.meta.outputs.version }}
+            docker.io/kvendra/kvendra-platform:${{ steps.meta.outputs.version }}
             ```
 
             Digest: `${{ steps.build.outputs.digest }}`
@@ -125,7 +125,7 @@ jobs:
             ## Verification
 
             ```bash
-            cosign verify ghcr.io/${{ github.repository_owner }}/kvendra-platform:${{ steps.meta.outputs.version }} \
+            cosign verify docker.io/kvendra/kvendra-platform:${{ steps.meta.outputs.version }} \
               --certificate-identity-regexp '^https://github.com/${{ github.repository }}/' \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com
             ```
@@ -136,7 +136,7 @@ jobs:
             digest via cosign. Verify the attached attestation:
 
             ```bash
-            cosign verify-attestation ghcr.io/${{ github.repository_owner }}/kvendra-platform:${{ steps.meta.outputs.version }} \
+            cosign verify-attestation docker.io/kvendra/kvendra-platform:${{ steps.meta.outputs.version }} \
               --certificate-identity-regexp '^https://github.com/${{ github.repository }}/' \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com \
               --type spdxjson
