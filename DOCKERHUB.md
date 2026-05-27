@@ -108,7 +108,7 @@ docker compose --profile ollama up -d
 ```
 
 Pros: 100% offline after model pull, no Kvendra account, no per-token cost.
-Cons: ~5 GB model download on first run; lower-quality vectors than Kvendra Cloud (production-grade Bedrock Titan v2 vs community model).
+Cons: ~5 GB model download on first run; lower-quality vectors than Kvendra Cloud (production-grade vs community model).
 
 ### Mode 3 — **Mock** (CI/dev only)
 
@@ -130,17 +130,45 @@ To switch modes after the stack is up: edit `.env` + `docker compose restart kve
 
 The Platform is a passive MCP server. Any MCP-native client can drive it. For Claude Code:
 
-```bash
-# 1. Read the bootstrap auth token from the running container:
-TOKEN=$(cat ./data/auth.token)
+### Step 1 — Get the bootstrap auth token
 
-# 2. Register the MCP server with Claude Code:
+The Platform writes the token to `/data/auth.token` (mode 0600) **inside the container** on first boot. How you read it depends on how `/data` is wired:
+
+- **Reference-stack** (`./scripts/up.sh`): `/data` is bind-mounted to `./data/` on the host, so the file appears at `./data/auth.token`:
+
+  ```bash
+  TOKEN=$(cat ./data/auth.token)
+  ```
+
+- **Docker named volume** (e.g. `kvendra_platform_data:/data` in compose, the default in `docker-compose.yml`): nothing appears on the host. Read it from the container directly:
+
+  ```bash
+  TOKEN=$(docker exec kvendra-ref-platform cat /data/auth.token)
+  # or, if you ran the standalone example below: docker exec kvendra-platform ...
+  ```
+
+- **Plain `docker run` without `-v`**: the volume is anonymous and the token dies with the container. You almost certainly want one of the two options above.
+
+### Step 2 — Register the MCP server with Claude Code
+
+```bash
 claude mcp add kvendra-platform http://localhost:7777/mcp \
   -H "Authorization: Bearer $TOKEN"
-
-# 3. (Recommended) install the kvendra-skills plugin for guided workflows:
-claude plugins install kvendra-skills
 ```
+
+### Step 3 — (Recommended) install the kvendra-skills plugin
+
+The `kvendra-skills` plugin ships pre-built workflows (consultancy, new-feature pipeline, code review, etc.) that drive the Platform's MCP tools. Install it from the Kvendra marketplace:
+
+```bash
+# Add the marketplace once (Claude Code 0.4+ syntax):
+claude plugin marketplace add KvendraAI/kvendra-marketplace
+
+# Install the plugin:
+claude plugin install kvendra-skills@KvendraAI/kvendra-marketplace
+```
+
+If your Claude Code version is older or the CLI flags differ, the same is reachable from inside Claude Code via `/plugin marketplace add KvendraAI/kvendra-marketplace` and `/plugin install kvendra-skills@KvendraAI/kvendra-marketplace`.
 
 Now Claude Code can read/write entities (`entity_create`, `entity_get`, `entity_query`, `entity_search`, `entity_update`, ...) and orchestrate transactions (`txn_create`, `txn_activate`, `txn_cancel`).
 
@@ -170,6 +198,41 @@ docker exec kvendra-platform cat /data/auth.token
 ```
 
 The Postgres database must exist and have `CREATE EXTENSION IF NOT EXISTS vector;` enabled. The Platform runs schema migrations on boot via the entrypoint script.
+
+---
+
+## Build the image yourself (reproduce 100% from source)
+
+For audit-grade environments (banks, regulated teams, security audits) or anyone who wants to compile every byte from public source rather than trust the published image, build locally and skip the pull:
+
+```bash
+# 1. Clone the source.
+git clone https://github.com/KvendraAI/kvendra-platform
+cd kvendra-platform
+
+# 2. Build the image. Multi-stage: Node 20 Alpine base, ~3-5 min cold,
+#    no network access needed beyond npm install + Alpine apk during build.
+docker build -t kvendra-platform-local:0.1.0-alpha.0 .
+
+# 3. (Optional) Inspect what you got — layers, env, entrypoint:
+docker history kvendra-platform-local:0.1.0-alpha.0
+docker inspect kvendra-platform-local:0.1.0-alpha.0
+
+# 4. Use it in your compose file. In kvendra-reference-stack, the
+#    helper script writes a docker-compose.override.yml for you:
+cd /path/to/kvendra-reference-stack
+./scripts/build-from-source.sh
+# This clones kvendra-platform, builds the image, and writes an
+# override that points docker-compose.yml at kvendra-platform-local
+# instead of pulling kvendra/kvendra-platform from Docker Hub.
+
+# Or wire it manually in your own compose file:
+#   services:
+#     kvendra-platform:
+#       image: kvendra-platform-local:0.1.0-alpha.0
+```
+
+This path pulls **zero** Kvendra-built bits — only `node:20-alpine` from Docker Hub, and `apk` + `npm` packages from their public mirrors during the build. Combined with the upcoming cosign-Docker-Hub migration (see `ISSUE-KVD-REFERENCESTACK-E17E41`), a regulated user can independently reproduce the published digest if they want to verify supply-chain integrity end-to-end.
 
 ---
 
