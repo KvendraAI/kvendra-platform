@@ -256,7 +256,7 @@ The project signs each released image with **cosign keyless-OIDC** via GitHub Ac
 ```bash
 docker pull kvendra/kvendra-platform:0.1.0-alpha.0
 docker inspect --format='{{.Id}}' kvendra/kvendra-platform:0.1.0-alpha.0
-# alpha.0 (unsigned, pre-workflow): sha256:517ae7255d1e5693735c84c5fb1c25bae9a0874d2c954cd090b8574e85936b40
+# alpha.0 (multi-arch, signed): sha256:10f76875aea6712ed6e5b36f0ae55fb6886ed1264f5a712ec138ac2e40448a69
 ```
 
 ### Full check — cosign signature + SBOM attestation (recommended)
@@ -278,9 +278,9 @@ cosign verify-attestation docker.io/kvendra/kvendra-platform:<version> \
 
 Both commands exit 0 with a JSON payload if the signature is valid. The matching SBOM is also attached as a GitHub Release asset at https://github.com/KvendraAI/kvendra-platform/releases/.
 
-### Coverage caveat (current state, 2026-05-27)
+### Coverage
 
-The cosign signing workflow targets Docker Hub from `v0.1.1+` onwards. The current `v0.1.0-alpha.0` tag was pushed manually before the workflow was wired and is **not signed** — for that version, fall back to the digest check above. The next release will be signed end-to-end.
+The signing workflow has covered every release from `v0.1.0-alpha.0` (the current published tag) onwards. `cosign verify` and `cosign verify-attestation` both succeed against the published image — try them yourself before running the container if your environment requires supply-chain verification before pulls.
 
 ---
 
