@@ -232,7 +232,7 @@ cd /path/to/kvendra-reference-stack
 #       image: kvendra-platform-local:0.1.0-alpha.0
 ```
 
-This path pulls **zero** Kvendra-built bits — only `node:20-alpine` from Docker Hub, and `apk` + `npm` packages from their public mirrors during the build. Combined with the upcoming cosign-Docker-Hub migration (see `ISSUE-KVD-REFERENCESTACK-E17E41`), a regulated user can independently reproduce the published digest if they want to verify supply-chain integrity end-to-end.
+This path pulls **zero** Kvendra-built bits — only `node:20-alpine` from Docker Hub, and `apk` + `npm` packages from their public mirrors during the build. Combined with the cosign keyless signature on every release (see § Verify the image below), a regulated user can independently reproduce the published digest and confirm it matches the signed one, end-to-end.
 
 ---
 
