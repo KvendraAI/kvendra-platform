@@ -1,6 +1,6 @@
 {
   "name": "kvendra-platform",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "description": "Kvendra Platform — single-tenant KB engine, MCP server over Streamable HTTP, AGPL-3.0",
   "license": "AGPL-3.0-only",
