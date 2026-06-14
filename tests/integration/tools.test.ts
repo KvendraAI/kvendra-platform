@@ -15,6 +15,7 @@ import { resolveEmbeddingsProvider } from '../../src/embeddings/index.js';
 import { closePool, getPool, runMigrations } from '../../src/storage/db.js';
 import { EntityRepo } from '../../src/storage/entity-repo.js';
 import { HistoryRepo } from '../../src/storage/history-repo.js';
+import { RelationsRepo } from '../../src/storage/relations-repo.js';
 import { TxnRepo } from '../../src/storage/txn-repo.js';
 import type { ToolDeps } from '../../src/tools/index.js';
 import { buildToolRegistry } from '../../src/tools/index.js';
@@ -33,6 +34,7 @@ describeIfDb('MCP tools — integration (Postgres+pgvector required)', () => {
     deps = {
       entityRepo: new EntityRepo(pool),
       historyRepo: new HistoryRepo(pool),
+      relationsRepo: new RelationsRepo(pool),
       txnRepo: new TxnRepo(pool),
       embeddings: resolveEmbeddingsProvider('mock'),
     };

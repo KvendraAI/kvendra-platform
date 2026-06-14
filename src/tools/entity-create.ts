@@ -53,9 +53,14 @@ export const entityCreateTool: ToolDescriptor = {
       }
     }
 
+    // INTERFACE PARITY (IF-060D2B): `force_id` is the Enterprise-shaped alias
+    // for `entity_id`. Whichever is supplied wins; entity_id takes precedence
+    // if (unexpectedly) both are present. Both optional per the schema.
+    const literalId = input.entity_id ?? input.force_id;
+
     const resolved = resolveEntityId(
       input.entity_type,
-      input.entity_id,
+      literalId,
       input.project_id ?? null,
       input.component_id ?? null,
     );

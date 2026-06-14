@@ -4,6 +4,7 @@ import { resolveEmbeddingsProvider } from './embeddings/index.js';
 import { closePool, getPool, runMigrations } from './storage/db.js';
 import { EntityRepo } from './storage/entity-repo.js';
 import { HistoryRepo } from './storage/history-repo.js';
+import { RelationsRepo } from './storage/relations-repo.js';
 import { TxnRepo } from './storage/txn-repo.js';
 import { buildHttpServer } from './server/http.js';
 import { txnInProgress } from './metrics/prom.js';
@@ -21,6 +22,7 @@ async function main(): Promise<void> {
 
   const entityRepo = new EntityRepo(pool);
   const historyRepo = new HistoryRepo(pool);
+  const relationsRepo = new RelationsRepo(pool);
   const txnRepo = new TxnRepo(pool);
   const embeddings = resolveEmbeddingsProvider(cfg.embeddingsProvider);
 
@@ -38,7 +40,7 @@ async function main(): Promise<void> {
     host: cfg.host,
     authTokenFile: cfg.authTokenFile,
     initialAuthToken: cfg.authToken,
-    deps: { entityRepo, historyRepo, txnRepo, embeddings },
+    deps: { entityRepo, historyRepo, relationsRepo, txnRepo, embeddings },
   });
 
   await app.listen({ port: cfg.port, host: cfg.host });

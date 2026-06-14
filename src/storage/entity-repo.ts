@@ -198,7 +198,10 @@ export class EntityRepo {
 
   async update(
     entityId: string,
-    expectedVersion: number,
+    // AC-CAS-KEEP-1: optional. Present → optimistic-lock (CAS) check;
+    // absent → lenient last-write-wins (skip the version check). No
+    // VERSION_REQUIRED enforcement (interface parity with IF-060D2B).
+    expectedVersion: number | undefined,
     patch: {
       title?: string;
       content?: string;
@@ -222,7 +225,8 @@ export class EntityRepo {
         throw new RepoError('ENTITY_NOT_FOUND', `Entity "${entityId}" not found.`);
       }
       const currentVersion = currentRes.rows[0]?.version as number;
-      if (currentVersion !== expectedVersion) {
+      // Keep the existing CAS semantics ONLY when the caller supplied a version.
+      if (expectedVersion !== undefined && currentVersion !== expectedVersion) {
         throw new RepoError(
           'VERSION_CONFLICT',
           `Optimistic lock failed: expected version ${expectedVersion}, current is ${currentVersion}.`,

@@ -28,6 +28,7 @@ function buildDeps(captured: CreateCall): ToolDeps {
       }) as unknown as ToolDeps['entityRepo']['create'],
     } as unknown as ToolDeps['entityRepo'],
     historyRepo: {} as ToolDeps['historyRepo'],
+    relationsRepo: {} as ToolDeps['relationsRepo'],
     txnRepo: {} as ToolDeps['txnRepo'],
     embeddings: {
       embed: async () => {

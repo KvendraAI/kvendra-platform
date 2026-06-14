@@ -12,9 +12,10 @@ export const txnActivateTool: ToolDescriptor = {
   async handler(deps: ToolDeps, raw: unknown) {
     const input = txnActivateInput.parse(raw);
     try {
+      // INTERFACE PARITY: activated_by is optional; default to local identity.
       const { txn, promotedEntities } = await deps.txnRepo.activate(
         input.txn_id,
-        input.activated_by,
+        input.activated_by ?? 'system:kvendra-platform',
       );
       txnInProgress.dec();
       return {

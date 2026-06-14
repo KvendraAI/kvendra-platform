@@ -11,7 +11,10 @@ export const entityArchiveTool: ToolDescriptor = {
   async handler(deps: ToolDeps, raw: unknown) {
     const input = archiveEntityInput.parse(raw);
     try {
-      return await deps.entityRepo.archive(input.entity_id, input.archive_reason, 'system:kvendra-platform');
+      // INTERFACE PARITY: archive_reason is optional in the schema; default a
+      // sentinel so the stored row keeps a non-null reason.
+      const reason = input.archive_reason ?? 'archived (no reason supplied)';
+      return await deps.entityRepo.archive(input.entity_id, reason, 'system:kvendra-platform');
     } catch (err) {
       if (err instanceof RepoError) {
         throw new PlatformError(err.code, err.message, 'errors');

@@ -12,7 +12,8 @@ export const entitySearchTool: ToolDescriptor = {
     const { data } = await deps.embeddings.embed({ input: input.query });
     const queryVec = data[0]?.embedding ?? [];
     const limit = input.limit ?? 10;
-    const min_score = input.min_score ?? 0.4;
+    // INTERFACE PARITY: default lowered 0.4 → 0.2 to match Enterprise recall.
+    const min_score = input.min_score ?? 0.2;
     const hits = await deps.entityRepo.search({
       query_embedding: queryVec,
       ...(input.entity_type ? { entity_type: input.entity_type } : {}),

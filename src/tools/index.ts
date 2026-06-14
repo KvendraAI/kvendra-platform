@@ -4,6 +4,7 @@ import type { ZodTypeAny } from 'zod';
 import type { EmbeddingsProvider } from '../embeddings/index.js';
 import type { EntityRepo } from '../storage/entity-repo.js';
 import type { HistoryRepo } from '../storage/history-repo.js';
+import type { RelationsRepo } from '../storage/relations-repo.js';
 import type { TxnRepo } from '../storage/txn-repo.js';
 
 import { entityGetTool } from './entity-get.js';
@@ -24,6 +25,7 @@ import { helpTool } from './help.js';
 export interface ToolDeps {
   entityRepo: EntityRepo;
   historyRepo: HistoryRepo;
+  relationsRepo: RelationsRepo;
   txnRepo: TxnRepo;
   embeddings: EmbeddingsProvider;
 }

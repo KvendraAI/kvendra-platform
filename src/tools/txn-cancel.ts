@@ -11,7 +11,12 @@ export const txnCancelTool: ToolDescriptor = {
   async handler(deps: ToolDeps, raw: unknown) {
     const input = txnCancelInput.parse(raw);
     try {
-      const txn = await deps.txnRepo.cancel(input.txn_id, input.reason, input.cancelled_by);
+      // INTERFACE PARITY: cancelled_by is optional; default to local identity.
+      const txn = await deps.txnRepo.cancel(
+        input.txn_id,
+        input.reason,
+        input.cancelled_by ?? 'system:kvendra-platform',
+      );
       txnInProgress.dec();
       return { txn_id: txn.txn_id, cancelled_at: txn.cancelled_at };
     } catch (err) {
