@@ -8,7 +8,7 @@
 | Value | Where it lives | Tier | Use case |
 |---|---|---|---|
 | `mock` | `kvendra-platform` (AGPL) | — | CI tests, early dev, demos. Wire-stable per `ADR-KVD-PLATFORM` (SHA-256 + ChaCha20 + L2-normalize). |
-| `openai-compatible` | `kvendra-platform` (AGPL) | A / B | Any OpenAI-compatible `/embeddings` endpoint (Ollama, vLLM, llama.cpp, OpenAI cloud, Kvendra Cloud, bedrock-access-gateway proxy). |
+| `openai-compatible` | `kvendra-platform` (AGPL) | B | Any OpenAI-compatible `/embeddings` endpoint serving a 1024-dim model (Ollama, vLLM, TEI, llama.cpp, Mistral, LiteLLM / bedrock-access-gateway proxy). |
 | `bedrock` | `kvendra-enterprise` (proprietary) | C | NOT shipped in Platform per `ADR-KVD-1823F7` Open Core boundary. Use `openai-compatible` + bedrock-access-gateway for self-host. |
 
 ## Env vars
@@ -17,35 +17,17 @@
 |---|---|---|---|
 | `EMBEDDINGS_PROVIDER` | always (else error at boot) | none | `mock` \| `openai-compatible` \| `bedrock` |
 | `EMBEDDINGS_BASE_URL` | `openai-compatible` | — | E.g. `http://localhost:11434/v1`. Trailing slash optional. |
-| `EMBEDDINGS_MODEL` | `openai-compatible` | — | Provider-specific model id (e.g. `mxbai-embed-large`, `text-embedding-3-small`). |
+| `EMBEDDINGS_MODEL` | `openai-compatible` | — | Provider-specific model id of a natively 1024-dim model (e.g. `mxbai-embed-large`, `bge-large-en-v1.5`, `mistral-embed`). |
 | `EMBEDDINGS_API_KEY` | optional | unset | Bearer token. Omit for local providers (Ollama, llama.cpp) that don't auth. |
 | `EMBEDDINGS_TIMEOUT_MS` | optional | 30000 | Per-request timeout in ms. |
 
 ## Provider tiers
 
-### Tier A — Kvendra Cloud Embeddings API (free tier)
+### Tier B — local OSS provider (recommended: Ollama)
 
-Aligned with the SaaS by construction. Same wire alias `kvendra-embedding-v1`,
-same Bedrock Titan v2 backing model. No quality drift when migrating between
-self-host and SaaS.
-
-```yaml
-EMBEDDINGS_PROVIDER: openai-compatible
-EMBEDDINGS_BASE_URL: https://api.kvendra.com/v1
-EMBEDDINGS_MODEL: kvendra-embedding-v1
-EMBEDDINGS_API_KEY: <your-key-from-app.kvendra.cloud>
-```
-
-> **Status (2026-05)**: Cloud Embeddings API is M1.5 ready in `kvendra-enterprise`
-> staging. Public availability is gated on AWS Support case 177850260300533 (Bedrock
-> InvokeModel block on the Kvendra account). Track progress in the `ROAD-KVD-716183`
-> roadmap.
-
-### Tier B — local OSS provider (Ollama, vLLM, llama.cpp)
-
-100% offline. You manage the model. Quality drift is your responsibility: switching
-between providers requires re-embedding the corpus (vectors are not portable across
-models — this is a property of embedding spaces, not a Kvendra limitation).
+100% offline, no account needed. You manage the model. This is the default of the
+[`kvendra-reference-stack`](https://github.com/KvendraAI/kvendra-reference-stack)
+(`./scripts/up.sh` starts Ollama and pulls `mxbai-embed-large`).
 
 ```yaml
 EMBEDDINGS_PROVIDER: openai-compatible
@@ -54,17 +36,39 @@ EMBEDDINGS_MODEL: mxbai-embed-large
 # EMBEDDINGS_API_KEY: not needed for local Ollama
 ```
 
+### Own OpenAI-compatible provider
+
+Any endpoint that follows the OpenAI `/embeddings` shape works, as long as the model
+returns **1024-dim vectors natively**: the platform validates 1024 dims and does
+**not** send a `dimensions` parameter (it posts only `{model, input}`).
+
+```yaml
+EMBEDDINGS_PROVIDER: openai-compatible
+EMBEDDINGS_BASE_URL: https://your-provider.example.com/v1
+EMBEDDINGS_MODEL: mxbai-embed-large
+EMBEDDINGS_API_KEY: <your-provider-key>
+```
+
 Recommended models with 1024-dim output (drop-in compatible):
 
 | Provider | Model | Dim | Notes |
 |---|---|---|---|
-| Ollama | `mxbai-embed-large` | 1024 | Best quality for the 1024-dim slot at the time of writing. |
-| OpenAI | `text-embedding-3-small` (1024 dim mode) | 1024 | Cloud paid; use `dimensions=1024` parameter if supported. |
-| vLLM | Any 1024-dim embedding model | 1024 | Performance-oriented. |
+| Ollama | `mxbai-embed-large` | 1024 | Default. Best quality for the 1024-dim slot at the time of writing. |
+| vLLM / Hugging Face TEI | `mxbai-embed-large`, `bge-large-en-v1.5` | 1024 | Performance-oriented self-hosted serving. |
+| Mistral | `mistral-embed` | 1024 | Hosted, paid. |
+| Gateway (e.g. LiteLLM, bedrock-access-gateway) | Bedrock Titan v2, OpenAI `text-embedding-3-*` | 1024 | Only if the gateway pins the output to 1024 dims — the platform does not request it. |
 
-Models with other dims (e.g. `nomic-embed-text` → 768) **will fail at boot** with
-`Expected dim 1024, got 768`. Re-embedding existing data on a dim change is an
-out-of-band operation (not covered by `kvendra-platform` v0.1).
+Models with other dims (e.g. `nomic-embed-text` → 768, OpenAI `text-embedding-3-small`
+called directly → 1536) **fail at request time** with `Expected dim 1024, got 768`.
+
+### Switching provider = re-embedding
+
+Changing provider **or** model changes the vector space, even when both produce
+1024-dim vectors: vectors stored with the old model are not comparable with the new
+ones, and semantic search returns incoherent results until the corpus is re-embedded.
+Re-embed your existing entities after switching (or start from an empty KB).
+Re-embedding is an out-of-band operation (not covered by `kvendra-platform` v0.1).
+This is a property of embedding spaces, not a Kvendra limitation.
 
 ### Tier C — full SaaS Kvendra (managed)
 

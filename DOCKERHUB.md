@@ -5,8 +5,8 @@
 Kvendra Platform is the structural core that any MCP-native AI assistant (Claude Code, custom agents, etc.) can call to read/write/query a strongly-typed project KB. Use it self-hosted on your laptop, or as the engine behind a Kvendra Cloud workspace.
 
 - **Source**: https://github.com/KvendraAI/kvendra-platform
-- **Full self-hosted stack**: https://github.com/KvendraAI/kvendra-reference-stack (docker-compose with Postgres + Platform + backup + optional Ollama)
-- **Managed mode**: https://kvendra.cloud (Kvendra Cloud — free tier 200k tokens/month for embeddings)
+- **Full self-hosted stack**: https://github.com/KvendraAI/kvendra-reference-stack (docker-compose with Postgres + Platform + Ollama + backup)
+- **Managed mode**: https://kvendra.cloud (Kvendra Cloud — hosted knowledge base)
 
 ---
 
@@ -18,9 +18,9 @@ The Platform needs a PostgreSQL database with the `pgvector` extension. The simp
 git clone https://github.com/KvendraAI/kvendra-reference-stack
 cd kvendra-reference-stack
 cp .env.example .env
-# Edit .env — paste your Kvendra API key (signup at https://kvendra.cloud)
+# Default: local Ollama embeddings (mxbai-embed-large) — no account or key needed.
 ./scripts/up.sh
-# Stack up: 3 containers (db + platform + backup).
+# Stack up: 4 containers (db + platform + ollama + backup).
 curl http://localhost:7777/healthz
 # {"status":"ok","schema_version":"v1.0"}
 ```
@@ -63,35 +63,21 @@ The auth token is bootstrapped on first boot into `/data/auth.token` (file mode 
 | `AUTH_TOKEN_FILE` | `/data/auth.token` | no | Path inside the container where the bootstrap auth token is written. |
 | `LOG_LEVEL` | `info` | no | `debug | info | warn | error`. |
 | `STAGE` | `local` | no | Informational tag for logs. |
-| `EMBEDDINGS_PROVIDER` | `mock` | no | `openai-compatible | bedrock | mock`. See "Three modes" below. |
-| `EMBEDDINGS_BASE_URL` | — | depends | When `openai-compatible`, the base URL (e.g. `https://api.kvendra.cloud/v1` or `http://ollama:11434/v1`). |
-| `EMBEDDINGS_MODEL` | — | depends | When `openai-compatible`, the model alias (e.g. `kvendra-embedding-v1` or `mxbai-embed-large`). |
-| `EMBEDDINGS_API_KEY` | — | depends | When the provider requires auth (e.g. Kvendra Cloud). |
+| `EMBEDDINGS_PROVIDER` | `mock` | no | `openai-compatible | bedrock | mock`. See "Embeddings modes" below. |
+| `EMBEDDINGS_BASE_URL` | — | depends | When `openai-compatible`, the base URL (e.g. `http://ollama:11434/v1` or your provider's `/v1` endpoint). |
+| `EMBEDDINGS_MODEL` | — | depends | When `openai-compatible`, a natively 1024-dim model (e.g. `mxbai-embed-large`, `bge-large-en-v1.5`, `mistral-embed`). |
+| `EMBEDDINGS_API_KEY` | — | depends | When the provider requires auth (hosted providers). Not needed for local Ollama. |
 | `EMBEDDINGS_TIMEOUT_MS` | `30000` | no | HTTP timeout for embedding calls. |
 
 ---
 
-## Three modes
+## Embeddings modes
 
 The Platform stores entity content + a 1024-dim vector embedding for each. The embedding provider is pluggable. Pick one:
 
-### Mode 1 — **Cloud** (default in the reference-stack, easiest)
+### Mode 1 — **Ollama local** (default in the reference-stack, no signup)
 
-Use Kvendra Cloud embeddings (free tier: 200k tokens/month). Signup at https://kvendra.cloud, generate an API key, paste it in.
-
-```yaml
-EMBEDDINGS_PROVIDER: openai-compatible
-EMBEDDINGS_BASE_URL: https://api.kvendra.cloud/v1
-EMBEDDINGS_MODEL: kvendra-embedding-v1
-EMBEDDINGS_API_KEY: kvd_live_<your-key>
-```
-
-Pros: zero local compute, identical vectors to Kvendra Cloud SaaS.
-Cons: requires signup + outbound HTTPS to `api.kvendra.cloud`.
-
-### Mode 2 — **Ollama local** (no signup, fully local)
-
-Run Ollama on the same machine and point the Platform at it:
+Run Ollama next to the Platform and point it there:
 
 ```yaml
 EMBEDDINGS_PROVIDER: openai-compatible
@@ -100,15 +86,30 @@ EMBEDDINGS_MODEL: mxbai-embed-large
 # No EMBEDDINGS_API_KEY needed
 ```
 
-The reference-stack provides an Ollama service via the `ollama` compose profile:
+The reference-stack starts its Ollama service by default and pulls the model:
 
 ```bash
-docker compose --profile ollama up -d
-# or: ./scripts/up.sh --with-ollama
+./scripts/up.sh
 ```
 
-Pros: 100% offline after model pull, no Kvendra account, no per-token cost.
-Cons: ~5 GB model download on first run; lower-quality vectors than Kvendra Cloud (production-grade vs community model).
+Pros: 100% offline after the model pull, no account, no per-token cost.
+Cons: ~700 MB model download on first run; embeddings computed on your hardware.
+
+### Mode 2 — **Your own OpenAI-compatible provider**
+
+Any endpoint that follows the OpenAI `/embeddings` shape, serving a **natively 1024-dim** model (vLLM / TEI with `mxbai-embed-large` or `bge-large-en-v1.5`, Mistral `mistral-embed`, or a gateway such as LiteLLM that pins the output to 1024). The Platform does not send a `dimensions` parameter.
+
+```yaml
+EMBEDDINGS_PROVIDER: openai-compatible
+EMBEDDINGS_BASE_URL: https://your-provider.example.com/v1
+EMBEDDINGS_MODEL: mxbai-embed-large
+EMBEDDINGS_API_KEY: <your-provider-key>
+```
+
+In the reference-stack, start with `./scripts/up.sh --no-ollama`.
+
+Pros: no local compute for embeddings.
+Cons: outbound HTTPS to your provider; the embedded strings are sent to it.
 
 ### Mode 3 — **Mock** (CI/dev only)
 
@@ -122,7 +123,7 @@ EMBEDDINGS_PROVIDER: mock
 Pros: hermetic, zero deps, perfect for unit tests + CI.
 Cons: vectors are not semantically meaningful — searches return arbitrary results.
 
-To switch modes after the stack is up: edit `.env` + `docker compose restart kvendra-platform`. Existing entities keep the vectors they were embedded with — re-embed manually if you change providers (the Platform exposes a CLI command for this, see GitHub README).
+To switch modes after the stack is up: edit `.env` + `docker compose restart kvendra-platform`. **Switching provider = re-embedding**: changing provider or model changes the vector space even at 1024 dims, so existing entities keep vectors that are not comparable with the new ones — re-embed them (or start from an empty KB).
 
 ---
 
@@ -187,9 +188,8 @@ docker run --rm -d \
   -v kvendra-platform-data:/data \
   -e DATABASE_URL='postgres://kvendra:kvendra@host.docker.internal:5432/kvendra_platform' \
   -e EMBEDDINGS_PROVIDER=openai-compatible \
-  -e EMBEDDINGS_BASE_URL='https://api.kvendra.cloud/v1' \
-  -e EMBEDDINGS_MODEL='kvendra-embedding-v1' \
-  -e EMBEDDINGS_API_KEY='kvd_live_xxx' \
+  -e EMBEDDINGS_BASE_URL='http://host.docker.internal:11434/v1' \
+  -e EMBEDDINGS_MODEL='mxbai-embed-large' \
   kvendra/kvendra-platform:0.1.0-alpha.0
 
 # Wait ~10s for migrations + boot, then:
@@ -287,7 +287,7 @@ The signing workflow has covered every release from `v0.1.0-alpha.0` (the curren
 ## Troubleshooting
 
 - **`pg_isready: connection refused`** — Postgres not booted yet. The reference-stack uses `depends_on.condition: service_healthy` to wait; standalone runs may need `--restart unless-stopped` plus a retry.
-- **`embeddings auth failed (401)`** — `EMBEDDINGS_API_KEY` not set, expired, or pointing at a placeholder (`REPLACE_WITH_YOUR_KVENDRA_KEY`). Edit `.env` and `docker compose restart kvendra-platform`.
+- **`embeddings auth failed (401)`** — your provider rejected `EMBEDDINGS_API_KEY` (not set, expired or wrong). Edit `.env` and `docker compose restart kvendra-platform`.
 - **Out-of-memory at boot** — Node uses ~80-120 MB resident; if you're seeing OOM, check the Postgres container's `shared_buffers` (default may exceed Docker Desktop memory cap).
 - **Schema migration loop** — `/data` volume corrupted. Drop the volume and restart: `docker volume rm kvendra_ref_platform_data`. WARNING: this destroys local KB state.
 
@@ -301,7 +301,7 @@ For more, see https://github.com/KvendraAI/kvendra-reference-stack/blob/main/doc
 |---|---|
 | **Source code** | https://github.com/KvendraAI/kvendra-platform |
 | **Full stack (docker-compose)** | https://github.com/KvendraAI/kvendra-reference-stack |
-| **Managed mode (free tier)** | https://kvendra.cloud |
+| **Managed mode** | https://kvendra.cloud |
 | **Claude Code plugin** | https://github.com/KvendraAI/kvendra-skills |
 | **Issue tracker** | https://github.com/KvendraAI/kvendra-platform/issues |
 | **License** | AGPL-3.0 (compatible with self-hosting and commercial AGPL-respecting use) |

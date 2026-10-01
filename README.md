@@ -80,16 +80,18 @@ EMBEDDINGS_PROVIDER=openai-compatible
 EMBEDDINGS_BASE_URL=http://localhost:11434/v1
 EMBEDDINGS_MODEL=mxbai-embed-large
 
-# Self-host aligned with Kvendra Cloud SaaS (Tier A — no quality drift):
+# Self-host with your own OpenAI-compatible provider (natively 1024-dim model):
 EMBEDDINGS_PROVIDER=openai-compatible
-EMBEDDINGS_BASE_URL=https://api.kvendra.com/v1
-EMBEDDINGS_MODEL=kvendra-embedding-v1
-EMBEDDINGS_API_KEY=<your-key-from-app.kvendra.cloud>
+EMBEDDINGS_BASE_URL=https://your-provider.example.com/v1
+EMBEDDINGS_MODEL=mxbai-embed-large
+EMBEDDINGS_API_KEY=<your-provider-key>
 ```
 
 Vectors are validated as 1024-dim and L2-normalized. Models with other dims
-(e.g. `nomic-embed-text` → 768) fail at request time. See [`docs/embeddings.md`](./docs/embeddings.md)
-for the full configuration matrix, supported providers, and the Tier A/B/C model.
+(e.g. `nomic-embed-text` → 768) fail at request time; the platform does not send a
+`dimensions` parameter. Switching provider or model requires re-embedding the corpus.
+See [`docs/embeddings.md`](./docs/embeddings.md) for the full configuration matrix and
+supported providers.
 
 ## License (AGPL-3.0 — §13 implications)
 
