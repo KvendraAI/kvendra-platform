@@ -4,11 +4,11 @@
 
 Kvendra Platform is the open-source structural core of the Kvendra product line. It runs as a self-hosted process (or Docker container) on your machine and exposes 20 typed entity types (`PRJ`, `CMP`, `IF`, `REQ`, `TEST`, `REG`, `ISSUE`, `REL`, `SLA`, `ROAD`, `GLO`, `STD`, `PAT`, `ADR`, `RUN`, `UX`, `DOC`, `ENV`, `COST`, `CFG`) through 14 MCP tools that any AI assistant (Claude Code, custom agents, etc.) can call.
 
-This repository tracks **M1 alpha skeleton** (single-tenant, mock embeddings, docker-compose self-host). Multi-tenancy, RBAC, OIDC and managed embeddings live in `kvendra-enterprise` (proprietary), per `ADR-KVD-023`.
+It is single-tenant by design and self-hosted with Docker Compose; embeddings are bring-your-own (any OpenAI-compatible endpoint such as Ollama, or a mock provider for tests). Multi-tenancy, RBAC, OIDC and managed embeddings live in `kvendra-enterprise`, a separate proprietary product.
 
 ## Status
 
-`0.1.0-alpha.0` — M1 skeleton in progress (per `ROAD-KVD-011`).
+`0.1.0-alpha.1` — alpha. A signed container image is published on Docker Hub (`docker.io/kvendra/kvendra-platform`, cosign keyless signature and SPDX SBOM).
 
 ## Install (Docker Compose self-host)
 
@@ -99,7 +99,7 @@ Source code in this repository is licensed under [GNU AGPL-3.0-only](./LICENSE).
 
 **Section 13 in plain English:** if you modify `kvendra-platform` and offer the modified version as a network-accessible service to third parties (e.g. hosting it publicly at `https://kb.your-company.com`), you must publish your modifications under AGPL-3.0 and make them available to those users. Using `kvendra-platform` internally (your own team, your own laptop, your own CI runners) does NOT trigger §13.
 
-The companion product `kvendra-enterprise` is a separate proprietary codebase (multi-tenant SaaS, RBAC, OIDC, managed embeddings) owned by the same legal entity. It is NOT governed by AGPL-3.0. See `ADR-KVD-004` (Open Core licensing).
+The companion product `kvendra-enterprise` is a separate proprietary codebase (multi-tenant SaaS, RBAC, OIDC, managed embeddings) owned by the same legal entity. It is NOT governed by AGPL-3.0.
 
 ---
 
