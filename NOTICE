@@ -1,0 +1,31 @@
+kvendra-platform
+Copyright (C) 2026 Chronum LLC
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License, version 3 only
+(SPDX-License-Identifier: AGPL-3.0-only), as published by the Free
+Software Foundation.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
+General Public License for more details.
+
+The full text of the license is in the LICENSE file of this repository
+and at <https://www.gnu.org/licenses/agpl-3.0.txt>.
+
+----------------------------------------------------------------------
+
+Section 13 (Remote Network Interaction) note for users:
+
+If you modify this program and provide it as a network-accessible
+service to users (e.g. hosting your own kvendra-platform instance and
+exposing it via HTTP to third parties), AGPL section 13 requires you
+to offer the corresponding source code of your modified version to
+those users. See https://www.gnu.org/licenses/agpl-3.0.html#section13
+for the canonical legal text.
+
+The Kvendra commercial product (kvendra-enterprise) is a separate,
+proprietary codebase owned by the same legal entity and is NOT
+governed by this AGPL license. See ADR-KVD-004 (Open Core licensing)
+and ADR-KVD-023 (boundary motor vs operación SaaS).
