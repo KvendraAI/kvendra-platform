@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 import type { ZodTypeAny } from 'zod';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 /**
  * Convert a Zod schema into a minimal JSON Schema accepted by MCP tools.
