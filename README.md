@@ -103,6 +103,6 @@ The companion product `kvendra-enterprise` is a separate proprietary codebase (m
 
 ---
 
-- Site: [kvendra.com](https://kvendra.com)
+- Site: [kvendra.ai](https://kvendra.ai)
 - Org: [github.com/KvendraAI](https://github.com/KvendraAI)
 - Contact: hello@kvendra.ai

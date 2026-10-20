@@ -72,7 +72,7 @@ This is a property of embedding spaces, not a Kvendra limitation.
 
 ### Tier C — full SaaS Kvendra (managed)
 
-Out of scope for `kvendra-platform`. See `kvendra.com/enterprise`.
+Out of scope for `kvendra-platform`. See [kvendra.ai](https://kvendra.ai).
 
 ## Mock provider — CI tests and demos
 
