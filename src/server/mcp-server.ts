@@ -5,6 +5,7 @@ import { zodToJsonSchema } from '../utils/zod-to-mcp.js';
 import { toolCallCounter, toolLatency, toolCallsTotal, toolDurationMs } from '../metrics/prom.js';
 import { asErrorPayload, PlatformError } from './errors.js';
 import { logger } from '../utils/logger.js';
+import { ENGINE_VERSION } from '../version.js';
 
 /**
  * Minimal JSON-RPC 2.0 dispatcher implementing the MCP subset we need
@@ -33,7 +34,7 @@ export interface JsonRpcResponse {
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_NAME = 'kvendra-platform';
-const SERVER_VERSION = '0.1.0-alpha.0';
+const SERVER_VERSION = ENGINE_VERSION;
 
 export class McpServer {
   private readonly registry: Record<string, ToolDescriptor>;
@@ -109,7 +110,9 @@ export class McpServer {
     });
   }
 
-  async callTool(params: unknown): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
+  async callTool(
+    params: unknown,
+  ): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }> {
     const p = params as { name?: string; arguments?: unknown } | undefined;
     const toolName = p?.name;
     if (!toolName) {

@@ -31,6 +31,7 @@ RUN npm run build
 # Stage 3 — runtime: minimal image with compiled JS + prod deps + entrypoint.
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runtime
+LABEL org.opencontainers.image.licenses="AGPL-3.0-only"
 WORKDIR /app
 
 # bash + openssl for entrypoint, postgresql-client for pg_isready.
@@ -38,7 +39,7 @@ RUN apk add --no-cache bash openssl postgresql-client
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY package.json ./
+COPY package.json LICENSE NOTICE ./
 COPY migrations ./migrations
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh \

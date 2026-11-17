@@ -22,6 +22,22 @@ describe('zodToJsonSchema', () => {
     expect(zodToJsonSchema(schema)).toEqual({ type: 'string', enum: ['a', 'b', 'c'] });
   });
 
+  it('treats defaulted, optional and nullable-optional fields as not required', () => {
+    const schema = z.object({
+      title: z.string(),
+      content: z.string().default(''),
+      tags: z.array(z.string()).optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
+    });
+    const json = zodToJsonSchema(schema) as Record<string, unknown>;
+    expect(json.required).toEqual(['title']);
+    expect((json.properties as Record<string, unknown>).content).toEqual({ type: 'string' });
+    expect((json.properties as Record<string, unknown>).metadata).toEqual({
+      type: 'object',
+      additionalProperties: true,
+    });
+  });
+
   it('converts arrays', () => {
     const schema = z.array(z.string());
     expect(zodToJsonSchema(schema)).toEqual({ type: 'array', items: { type: 'string' } });
