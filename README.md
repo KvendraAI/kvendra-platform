@@ -8,7 +8,7 @@ It is single-tenant by design and self-hosted with Docker Compose; embeddings ar
 
 ## Status
 
-`0.1.0-alpha.1` — alpha. A signed container image is published on Docker Hub (`docker.io/kvendra/kvendra-platform`, cosign keyless signature and SPDX SBOM).
+`0.1.0-alpha.2` — alpha. A signed container image is published on Docker Hub (`docker.io/kvendra/kvendra-platform`, cosign keyless signature and SPDX SBOM).
 
 ## Install (Docker Compose self-host)
 

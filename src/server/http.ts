@@ -8,6 +8,7 @@ import { registerAuth } from './auth.js';
 import { McpServer } from './mcp-server.js';
 import { registerMcpRoute } from './mcp-route.js';
 import type { ToolDeps } from '../tools/index.js';
+import { ENGINE_VERSION } from '../version.js';
 
 export interface HttpOptions {
   port: number;
@@ -24,7 +25,7 @@ export async function buildHttpServer(opts: HttpOptions): Promise<FastifyInstanc
   app.get('/ready', async () => ({ status: 'ready' }));
   app.get('/version', async () => ({
     name: 'kvendra-platform',
-    version: '0.1.0-alpha.0',
+    version: ENGINE_VERSION,
     schema_version: 'v1.0',
   }));
   app.get('/metrics', async (_req, reply) => {

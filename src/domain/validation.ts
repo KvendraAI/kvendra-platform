@@ -21,7 +21,7 @@ export const createEntityInput = z.object({
   title: z.string().min(1),
   content: z.string().default(''),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   relations: z.array(relationSchema).optional(),
   status: z.string().optional(),
   txn_id: z.string().optional(),
@@ -51,7 +51,7 @@ export const updateEntityInput = z.object({
       title: z.string().optional(),
       content: z.string().optional(),
       tags: z.array(z.string()).optional(),
-      metadata: z.record(z.unknown()).optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
       status: z.string().optional(),
     })
     .optional(),
@@ -59,7 +59,7 @@ export const updateEntityInput = z.object({
   title: z.string().optional(),
   content: z.string().optional(),
   status: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   tags: z.array(z.string()).optional(),
   // Tag deltas (Class 1 — write intent; read-modify-write in the handler).
   tags_add: z.array(z.string()).optional(),

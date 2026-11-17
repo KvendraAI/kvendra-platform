@@ -1,6 +1,6 @@
 {
   "name": "kvendra-platform",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "private": true,
   "description": "Kvendra Platform — single-tenant KB engine, MCP server over Streamable HTTP, AGPL-3.0",
   "license": "AGPL-3.0-only",
@@ -36,18 +36,18 @@
     "pg": "^8.11.3",
     "pino": "^9.0.0",
     "prom-client": "^15.1.0",
-    "zod": "^3.23.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/pg": "^8.11.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^9.0.0",
     "prettier": "^3.2.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.12"
   }
 }

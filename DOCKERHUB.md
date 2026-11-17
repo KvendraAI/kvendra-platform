@@ -34,7 +34,7 @@ If you only want this image standalone, see "Standalone (without docker-compose)
 | Property | Value |
 |---|---|
 | **Image** | `kvendra/kvendra-platform` |
-| **Tags** | `0.1.0-alpha.0`, `latest` |
+| **Tags** | `0.1.0-alpha.2`, `latest` |
 | **Base** | `node:20-alpine` (multi-stage build) |
 | **Architecture** | linux/amd64 |
 | **Size** | ~194 MB |
@@ -190,7 +190,7 @@ docker run --rm -d \
   -e EMBEDDINGS_PROVIDER=openai-compatible \
   -e EMBEDDINGS_BASE_URL='http://host.docker.internal:11434/v1' \
   -e EMBEDDINGS_MODEL='mxbai-embed-large' \
-  kvendra/kvendra-platform:0.1.0-alpha.0
+  kvendra/kvendra-platform:0.1.0-alpha.2
 
 # Wait ~10s for migrations + boot, then:
 curl http://localhost:7777/healthz
@@ -212,11 +212,11 @@ cd kvendra-platform
 
 # 2. Build the image. Multi-stage: Node 20 Alpine base, ~3-5 min cold,
 #    no network access needed beyond npm install + Alpine apk during build.
-docker build -t kvendra-platform-local:0.1.0-alpha.0 .
+docker build -t kvendra-platform-local:0.1.0-alpha.2 .
 
 # 3. (Optional) Inspect what you got — layers, env, entrypoint:
-docker history kvendra-platform-local:0.1.0-alpha.0
-docker inspect kvendra-platform-local:0.1.0-alpha.0
+docker history kvendra-platform-local:0.1.0-alpha.2
+docker inspect kvendra-platform-local:0.1.0-alpha.2
 
 # 4. Use it in your compose file. In kvendra-reference-stack, the
 #    helper script writes a docker-compose.override.yml for you:
@@ -229,7 +229,7 @@ cd /path/to/kvendra-reference-stack
 # Or wire it manually in your own compose file:
 #   services:
 #     kvendra-platform:
-#       image: kvendra-platform-local:0.1.0-alpha.0
+#       image: kvendra-platform-local:0.1.0-alpha.2
 ```
 
 This path pulls **zero** Kvendra-built bits — only `node:20-alpine` from Docker Hub, and `apk` + `npm` packages from their public mirrors during the build. Combined with the cosign keyless signature on every release (see § Verify the image below), a regulated user can independently reproduce the published digest and confirm it matches the signed one, end-to-end.
@@ -240,7 +240,9 @@ This path pulls **zero** Kvendra-built bits — only `node:20-alpine` from Docke
 
 | Tag | Purpose | Stability |
 |---|---|---|
-| `0.1.0-alpha.0` | M1 alpha skeleton (current) | alpha — APIs may evolve |
+| `0.1.0-alpha.2` | Current: security update of the dependencies, LICENSE/NOTICE in the image, version reported from package.json | alpha — APIs may evolve |
+| `0.1.0-alpha.1` | Previous alpha (superseded: dependency advisories) | alpha |
+| `0.1.0-alpha.0` | M1 alpha skeleton (superseded) | alpha |
 | `latest` | Mirror of the highest alpha/stable tag | tracks latest |
 
 **M2 roadmap** (next): full 20 entity-type catalog + skills runtime server-side + MCP Streamable HTTP upgrade. Follow `kvendra-platform` GitHub for milestones.
@@ -254,9 +256,9 @@ The project signs each released image with **cosign keyless-OIDC** via GitHub Ac
 ### Quick check — digest only
 
 ```bash
-docker pull kvendra/kvendra-platform:0.1.0-alpha.0
-docker inspect --format='{{.Id}}' kvendra/kvendra-platform:0.1.0-alpha.0
-# alpha.0 (multi-arch, signed): sha256:10f76875aea6712ed6e5b36f0ae55fb6886ed1264f5a712ec138ac2e40448a69
+docker pull kvendra/kvendra-platform:0.1.0-alpha.2
+docker inspect --format='{{.Id}}' kvendra/kvendra-platform:0.1.0-alpha.2
+# Compare with the digest in the GitHub Release notes of the same tag.
 ```
 
 ### Full check — cosign signature + SBOM attestation (recommended)
@@ -280,7 +282,7 @@ Both commands exit 0 with a JSON payload if the signature is valid. The matching
 
 ### Coverage
 
-The signing workflow has covered every release from `v0.1.0-alpha.0` (the current published tag) onwards. `cosign verify` and `cosign verify-attestation` both succeed against the published image — try them yourself before running the container if your environment requires supply-chain verification before pulls.
+The signing workflow has covered every release from `v0.1.0-alpha.0` onwards (current published tag: `v0.1.0-alpha.2`). `cosign verify` and `cosign verify-attestation` both succeed against the published image — try them yourself before running the container if your environment requires supply-chain verification before pulls.
 
 ---
 
